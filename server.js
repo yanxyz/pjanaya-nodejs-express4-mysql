@@ -8,17 +8,29 @@ var app = express();
 app.use(bodyParser());
 
 var env = app.get('env') == 'development' ? 'dev' : app.get('env');
-var port = process.env.PORT || 8080;
+// var port = process.env.PORT || 8080;
+// 改下端口, 8080 已被 apache 占用
+var port = process.env.PORT || 3000;
 
 
 // IMPORT MODELS
 // =============================================================================
+// docs: http://docs.sequelizejs.com/en/latest/
 var Sequelize = require('sequelize');
 
+// 上面已经定义了 env, 这里又定义一次。
 // db config
-var env = "dev";
+// var env = "dev";
 var config = require('./database.json')[env];
 var password = config.password ? config.password : null;
+
+// 改下配置
+config = {
+	"driver": "mysql",
+  "user": "root",
+  "database": "pjanaya-nodejs-express4-mysql",
+  "password": null
+};
 
 // initialize database connection
 var sequelize = new Sequelize(
@@ -29,20 +41,34 @@ var sequelize = new Sequelize(
     dialect: config.driver,
     logging: console.log,
 		define: {
+			// 不要自动添加  createdAt and updatedAt
 			timestamps: false
 		}
 	}
 );
 
 var crypto = require('crypto');
+// 重复引入，这样好吗？
 var DataTypes = require("sequelize");
 
+// define(modelName, attributes, [options]) -> Model
+// http://docs.sequelizejs.com/en/latest/api/sequelize/#definemodelname-attributes-options-model
 var User = sequelize.define('users', {
     username: DataTypes.STRING,
     password: DataTypes.STRING
   }, {
+  	// 添加实例方法。实例由 Model.build() 创建
+  	// http://docs.sequelizejs.com/en/latest/docs/models-definition/#expansion-of-models
+  	// 这些方法都是用回调而不是 Promise
     instanceMethods: {
       retrieveAll: function(onSuccess, onError) {
+      // findAll([options], [queryOptions]) -> Promise<Array<Instance>>
+      // http://docs.sequelizejs.com/en/latest/api/model/#findalloptions-queryoptions-promisearrayinstance
+      // 不提供 options 则用 null
+      // query(sql, [callee], [options={}]) -> Promise
+      // http://docs.sequelizejs.com/en/latest/api/sequelize/#querysql-callee-options-promise
+      // options.raw 不实例化结果
+      // sequelize 2.x sucess() 与 error() 已废弃，使用 Promise API
 			User.findAll({}, {raw: true}).success(onSuccess).error(onError);
 	  },
       retrieveById: function(user_id, onSuccess, onError) {
@@ -52,10 +78,14 @@ var User = sequelize.define('users', {
 			var username = this.username;
 			var password = this.password;
 
+			// 加密密码
 			var shasum = crypto.createHash('sha1');
 			shasum.update(password);
 			password = shasum.digest('hex');
 
+			// 先 build() 再 save() 保存到数据库
+			// 可以用 create() 一步完成
+			// http://docs.sequelizejs.com/en/latest/api/model/index.html#createvalues-options-promiseinstance
 			User.build({ username: username, password: password })
 			    .save().success(onSuccess).error(onError);
 	   },
@@ -68,9 +98,11 @@ var User = sequelize.define('users', {
 			shasum.update(password);
 			password = shasum.digest('hex');
 
+			// http://docs.sequelizejs.com/en/latest/api/model/index.html#updatevalues-options-promisearrayaffectedcountaffectedrows
 			User.update({ username: username,password: password},{where: {id: id} }).success(onSuccess).error(onError);
 	   },
       removeById: function(user_id, onSuccess, onError) {
+			// http://docs.sequelizejs.com/en/latest/api/model/index.html#destroyoptions-promiseundefined
 			User.destroy({where: {id: user_id}}).success(onSuccess).error(onError);
 	  }
     }
@@ -91,6 +123,8 @@ router.route('/users')
 	var username = req.body.username; //bodyParser does the magic
 	var password = req.body.password;
 
+	// http://docs.sequelizejs.com/en/latest/api/model/index.html#buildvalues-options-instance
+	// http://docs.sequelizejs.com/en/latest/docs/instances/
 	var user = User.build({ username: username, password: password });
 
 	user.add(function(success){
@@ -171,6 +205,7 @@ router.route('/users/:user_id')
 });
 
 // Middleware to use for all requests
+// http://localhost:3000/api/
 router.use(function(req, res, next) {
 	// do logging
 	console.log('Something is happening.');
@@ -185,3 +220,4 @@ app.use('/api', router);
 // =============================================================================
 app.listen(port);
 console.log('Magic happens on port ' + port);
+

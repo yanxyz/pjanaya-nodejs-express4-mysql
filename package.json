@@ -1,11 +1,27 @@
 {
-	"name": "node-api",
-	"main": "server.js",
-	"dependencies": {
-		"express": "~4.0.0",
-		"body-parser": "~1.0.1",
-		"mysql": "*",
-		"sequelize": "*",
-		"crypto": "*"
-	}
+  "name": "node-api",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "~1.0.1",
+    "crypto": "*",
+    "express": "~4.0.0",
+    "mysql": "*",
+    "sequelize": "^1.7.10"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "description": "Tutorial 1: Node.js + Express 4 + MySQL ===",
+  "version": "1.0.0",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pjanaya/nodejs-express4-mysql.git"
+  },
+  "author": "pjanaya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pjanaya/nodejs-express4-mysql/issues"
+  },
+  "homepage": "https://github.com/pjanaya/nodejs-express4-mysql#readme"
 }
